@@ -2,14 +2,14 @@ import telebot
 import json
 from telebot import types
 
-TOKEN = "Your Token"
+TOKEN = "YOUR TOKEN"
 bot = telebot.TeleBot(TOKEN)
 
 user_data = {}
 support_message_mapping = {}
-admins = [7740644517]
+admins = []
 users_connections = {}
-
+owner_id=7740644517
 
 def load_data():
     global user_data, users_connections
@@ -24,6 +24,11 @@ def load_data():
             users_connections = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         users_connections = {}
+    try:
+        with open("admins.json","r",encoding="utf-8") as f:
+            admins=json.load(f).get("admins")
+    except (FileNotFoundError, json.JSONDecodeError):
+        admins=[]
 
 
 def save_user_data():
@@ -34,7 +39,10 @@ def save_user_data():
 def save_connections():
     with open("connections.json", "w", encoding="utf-8") as f:
         json.dump(users_connections, f, indent=4, ensure_ascii=False)
-
+def save_admins():
+    the_dic={"admins":admins}
+    with open("admins.json", "w", encoding="utf-8") as f:
+        json.dump(the_dic, f, indent=4, ensure_ascii=False)
 
 load_data()
 
@@ -50,9 +58,10 @@ admin_markup = types.ReplyKeyboardMarkup(resize_keyboard=False)
 send_to_all_btn = types.KeyboardButton("Send To All")
 num_of_users_btn = types.KeyboardButton("Number Of Users")
 user_profile_btn = types.KeyboardButton("User Profile")
+add_admin_btn = types.KeyboardButton("Add Admin")
 main_menu_btn = types.KeyboardButton("Main Menu")
 admin_markup.add(send_to_all_btn, user_profile_btn)
-admin_markup.add(num_of_users_btn)
+admin_markup.add(num_of_users_btn,add_admin_btn)
 admin_markup.add(main_menu_btn)
 
 @bot.message_handler(commands=["admin"])
@@ -69,7 +78,7 @@ def admin_page(message):
 
 @bot.message_handler(
     func=lambda message: message.text
-    in ["Send To All", "Number Of Users", "User Profile","Main Menu"]
+    in ["Send To All", "Number Of Users", "User Profile","Main Menu","Add Admin"]
 )
 def admin_commands(message):
     if message.text == "Send To All":
@@ -104,10 +113,26 @@ def admin_commands(message):
         )
     elif message.text=="Main Menu":
         bot.send_message(message.chat.id,"welcome back to the main menu".capitalize(),reply_markup=main_markup)
+    elif message.text=="Add Admin":
+        if message.chat.id!=owner_id:
+            bot.send_message(message.chat.id,"you are not the owner:)".capitalize(),reply_markup=admin_markup)
+            return
+        msg=bot.send_message(message.chat.id,"enter the id : ".capitalize(),reply_markup=admin_markup)
+        bot.register_next_step_handler(msg,add_admin)
     else:
         bot.send_message(message.chat.id,message.text)
 
-
+def add_admin(message):
+    if not message.text.isdigit():
+        msg = bot.send_message(message.chat.id, "Please Enter A Number Like 800000000:")
+        bot.register_next_step_handler(msg, show_user_profile)
+        return
+    if not str(message.text) in user_data:
+        bot.send_message(message.chat.id, f"User {message.text} Is Not In The Bot",reply_markup=admin_markup)
+        return
+    admins.append(int(message.text))
+    bot.send_message(message.chat.id,f"Admin {message.text} Added Successfully !",reply_markup=admin_markup)
+    save_admins()
 def send_to_all(message):
     for user_id in user_data:
         bot.send_message(
