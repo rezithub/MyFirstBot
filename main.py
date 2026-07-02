@@ -50,9 +50,10 @@ admin_markup = types.ReplyKeyboardMarkup(resize_keyboard=False)
 send_to_all_btn = types.KeyboardButton("Send To All")
 num_of_users_btn = types.KeyboardButton("Number Of Users")
 user_profile_btn = types.KeyboardButton("User Profile")
+main_menu_btn = types.KeyboardButton("Main Menu")
 admin_markup.add(send_to_all_btn, user_profile_btn)
 admin_markup.add(num_of_users_btn)
-
+admin_markup.add(main_menu_btn)
 
 @bot.message_handler(commands=["admin"])
 def admin_page(message):
@@ -68,13 +69,13 @@ def admin_page(message):
 
 @bot.message_handler(
     func=lambda message: message.text
-    in ["Send To All", "Number Of Users", "User Profile"]
+    in ["Send To All", "Number Of Users", "User Profile","Main Menu"]
 )
 def admin_commands(message):
     if message.text == "Send To All":
         msg = bot.send_message(message.chat.id, "Enter The message :")
         bot.register_next_step_handler(msg, send_to_all)
-    if message.text == "Number Of Users":
+    elif message.text == "Number Of Users":
         num_of_reg = 0
         for userid in user_data:
             if user_data.get(userid) != {}:
@@ -83,7 +84,7 @@ def admin_commands(message):
             message.chat.id,
             f"Number Of Total Users: {len(user_data)}\nNumber Of Registred Users: {num_of_reg}\nNumber Of Unregistred Users: {len(user_data)-num_of_reg}",
         )
-    if message.text == "User Profile":
+    elif message.text == "User Profile":
         profile_markup = types.InlineKeyboardMarkup()
         all_IDs_btn = types.InlineKeyboardButton(
             "ALL USERS", callback_data="all_ids_profile"
@@ -101,6 +102,10 @@ def admin_commands(message):
             "Choose One Of Them :\n\nDescription :\nALL USER : it will show all users ids\nSPECIAL USER:it will send all of the specified users detailes by id",
             reply_markup=profile_markup,
         )
+    elif message.text=="Main Menu":
+        bot.send_message(message.chat.id,"welcome back to the main menu".capitalize(),reply_markup=main_markup)
+    else:
+        bot.send_message(message.chat.id,message.text)
 
 
 def send_to_all(message):
