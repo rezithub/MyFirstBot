@@ -70,16 +70,6 @@ admin_markup.add(num_of_users_btn, add_admin_btn)
 admin_markup.add(main_menu_btn)
 
 
-# @bot.message_handler(commands=["admin"])
-# def admin_page(message):
-#     if not message.chat.id in admins:
-#         bot.send_message(message.chat.id, "unfortunately You are not my admin 🥲")
-#         return
-#     bot.send_message(
-#         message.chat.id,
-#         f"Welcome To The Admin Panel Dear Admin {message.from_user.first_name} !\n\nID:{message.chat.id}\n\nChoose From The Buttons Below:",
-#         reply_markup=admin_markup,
-#     )
 @bot.message_handler(func=lambda message : message.text in ["Admin Panel","/admin"])
 def admin_page(message):
     if not message.chat.id in admins:
@@ -172,6 +162,7 @@ def add_admin(message):
         f"Admin {message.text} Added Successfully !",
         reply_markup=admin_markup,
     )
+    bot.send_message(int(message.text),"the owner promote you to admin !\n\nyou are now my admin:)\nuse admin buttons below:",reply_markup=admin_markup)
     save_admins()
 
 
