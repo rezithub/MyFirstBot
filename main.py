@@ -2,7 +2,7 @@ import telebot
 import json
 from telebot import types
 
-TOKEN = "8647110119:AAHXx2RgyIFUfY6aicUWrZG3eVy4TcElbiw"
+TOKEN = "Your Token"
 bot = telebot.TeleBot(TOKEN)
 
 user_data = {}
@@ -62,7 +62,7 @@ def answer_request(message):
 
     elif message.text == "Support":
         markup = types.InlineKeyboardMarkup()
-        back_btn = types.InlineKeyboardButton("Back", callback_data="support_back_btn")
+        back_btn = types.InlineKeyboardButton("Cancel", callback_data="Cancel_btn")
         markup.row(back_btn)
         msg = bot.send_message(
             message.chat.id,
@@ -73,6 +73,12 @@ def answer_request(message):
 
     elif message.text == "Find Friend":
         chat_id = str(message.chat.id)
+        if users_connections.get(chat_id).get("status")=="waiting":
+            markup = types.InlineKeyboardMarkup()
+            cancel_find_btn = types.InlineKeyboardButton("Back", callback_data="cancel_find_btn")
+            markup.row(cancel_find_btn)
+            bot.send_message(message.chat.id, "You are already in the queue , please wait or click cancel:",reply_markup=markup)
+            return
         if not (chat_id in user_data and "age" in user_data[chat_id]):
             bot.send_message(message.chat.id, "Please Register First :)", reply_markup=main_markup)
             return
@@ -90,6 +96,25 @@ def answer_request(message):
         gender_markup.add(back_btn)
         bot.send_message(message.chat.id, "What gender do you want to chat with?", reply_markup=gender_markup)
 
+@bot.callback_query_handler(func=lambda call: call.data.endswith("cancel_find_btn"))
+def cancel_friend_finding(call):
+    chat_id = str(call.message.chat.id)
+    if chat_id not in user_data:
+        bot.send_message(chat_id, "Session expired. Please click 'Register' again.")
+        return
+    users_connections.pop(chat_id)
+    bot.edit_message_text(
+        "Process Canceled !",
+        chat_id=chat_id,
+        message_id=call.message.message_id
+    )
+    bot.send_message(
+        chat_id,
+        "Please choose an option:",
+        reply_markup=main_markup
+    )
+
+       
 @bot.callback_query_handler(func=lambda call: call.data.endswith("_friend"))
 def friend_gender_callback(call):
     chat_id = str(call.message.chat.id)
