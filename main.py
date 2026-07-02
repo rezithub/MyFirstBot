@@ -2,7 +2,7 @@ import telebot
 import json
 from telebot import types
 
-TOKEN = "Your Token"
+TOKEN = "8647110119:AAHXx2RgyIFUfY6aicUWrZG3eVy4TcElbiw"
 bot = telebot.TeleBot(TOKEN)
 
 user_data = {}
@@ -132,9 +132,7 @@ def friend_gender_callback(call):
             break
 
     if partner_id is None:
-        bot.send_message(chat_id, "No one is available right now. Try again later.")
-        users_connections.pop(chat_id, None)
-        save_connections()
+        bot.send_message(chat_id, "No one is available right now. You are added to the waiting list.")
         return
 
     users_connections[chat_id] = {
