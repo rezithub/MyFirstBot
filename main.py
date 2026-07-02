@@ -45,34 +45,51 @@ friend_btn = types.KeyboardButton("Find Friend")
 main_markup.row(register_btn, support_btn)
 main_markup.row(friend_btn)
 
+
 @bot.message_handler(commands=["admin"])
 def admin_page(message):
-    if not message.chat.id in admins :
-        bot.send_message(message.chat.id,"unfortunately You are not my admin 🥲")
+    if not message.chat.id in admins:
+        bot.send_message(message.chat.id, "unfortunately You are not my admin 🥲")
         return
-    admin_markup=types.ReplyKeyboardMarkup(resize_keyboard=False)
-    send_to_all_btn=types.KeyboardButton("Send To All")
-    num_of_users=types.KeyboardButton("Number Of Users")
+    admin_markup = types.ReplyKeyboardMarkup(resize_keyboard=False)
+    send_to_all_btn = types.KeyboardButton("Send To All")
+    num_of_users = types.KeyboardButton("Number Of Users")
     admin_markup.add(send_to_all_btn)
     admin_markup.add(num_of_users)
-    bot.send_message(message.chat.id,f"Welcome To The Admin Panel Dear Admin {message.from_user.first_name} !\n\nID:{message.chat.id}\n\nChoose From The Buttons Below:",reply_markup=admin_markup)
+    bot.send_message(
+        message.chat.id,
+        f"Welcome To The Admin Panel Dear Admin {message.from_user.first_name} !\n\nID:{message.chat.id}\n\nChoose From The Buttons Below:",
+        reply_markup=admin_markup,
+    )
+
+
 @bot.message_handler(
-    func=lambda message: message.text in ["Send To All","Number Of Users"]
+    func=lambda message: message.text in ["Send To All", "Number Of Users"]
 )
 def admin_commands(message):
-    if(message.text=="Send To All"):
-        msg=bot.send_message(message.chat.id,"Enter The message :")
-        bot.register_next_step_handler(msg,send_to_all)
-    if(message.text=="Number Of Users"):
-        num_of_reg=0
+    if message.text == "Send To All":
+        msg = bot.send_message(message.chat.id, "Enter The message :")
+        bot.register_next_step_handler(msg, send_to_all)
+    if message.text == "Number Of Users":
+        num_of_reg = 0
         for userid in user_data:
-            if(user_data.get(userid)!={}):
-                num_of_reg+=1
-        bot.send_message(message.chat.id,f"Number Of Unregistred Users: {len(user_data)}\nNumber Of Registred Users: {num_of_reg}")
+            if user_data.get(userid) != {}:
+                num_of_reg += 1
+        bot.send_message(
+            message.chat.id,
+            f"Number Of Unregistred Users: {len(user_data)}\nNumber Of Registred Users: {num_of_reg}",
+        )
+
+
 def send_to_all(message):
     for user_id in user_data:
-        bot.send_message(user_id,f"This Is A Public Message From Admin{message.chat.id}:\n\n{message.text}")
-    bot.send_message(message.chat.id,f"Message Sent To All Users:)")
+        bot.send_message(
+            user_id,
+            f"This Is A Public Message From Admin{message.chat.id}:\n\n{message.text}",
+        )
+    bot.send_message(message.chat.id, f"Message Sent To All Users:)")
+
+
 @bot.message_handler(commands=["start"])
 def first_page(message):
     chat_id = str(message.chat.id)
@@ -81,7 +98,7 @@ def first_page(message):
         f"Hi {message.from_user.first_name}, welcome to the Bot!\nPlease choose an option below:",
         reply_markup=main_markup,
     )
-    if(user_data.get(chat_id)==None):
+    if user_data.get(chat_id) == None:
         user_data[chat_id] = {}
 
 
