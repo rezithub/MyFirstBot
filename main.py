@@ -2,7 +2,7 @@ import telebot
 import json
 from telebot import types
 
-TOKEN = "Your Token"
+TOKEN = "YOUR TOKEN"
 bot = telebot.TeleBot(TOKEN)
 
 user_data = {}
@@ -62,7 +62,7 @@ def answer_request(message):
 
     elif message.text == "Support":
         markup = types.InlineKeyboardMarkup()
-        back_btn = types.InlineKeyboardButton("Cancel", callback_data="Cancel_btn")
+        back_btn = types.InlineKeyboardButton("back", callback_data="support_back_btn")
         markup.row(back_btn)
         msg = bot.send_message(
             message.chat.id,
@@ -75,7 +75,7 @@ def answer_request(message):
         chat_id = str(message.chat.id)
         if users_connections.get(chat_id).get("status")=="waiting":
             markup = types.InlineKeyboardMarkup()
-            cancel_find_btn = types.InlineKeyboardButton("Back", callback_data="cancel_find_btn")
+            cancel_find_btn = types.InlineKeyboardButton("Cancel", callback_data="cancel_find_btn")
             markup.row(cancel_find_btn)
             bot.send_message(message.chat.id, "You are already in the queue , please wait or click cancel:",reply_markup=markup)
             return
@@ -100,9 +100,10 @@ def answer_request(message):
 def cancel_friend_finding(call):
     chat_id = str(call.message.chat.id)
     if chat_id not in user_data:
-        bot.send_message(chat_id, "Session expired. Please click 'Register' again.")
+        bot.send_message(chat_id, "Session expired")
         return
     users_connections.pop(chat_id)
+    bot.answer_callback_query(call.id, text="Cancelling ...", show_alert=False)
     bot.edit_message_text(
         "Process Canceled !",
         chat_id=chat_id,
@@ -119,9 +120,9 @@ def cancel_friend_finding(call):
 def friend_gender_callback(call):
     chat_id = str(call.message.chat.id)
     if chat_id not in user_data:
-        bot.send_message(chat_id, "Session expired. Please click 'Register' again.")
+        bot.send_message(chat_id, "Session expired.")
         return
-
+    bot.answer_callback_query(call.id, text="choosing gender ...", show_alert=False)
     preference = call.data.split("_")[0]
     bot.edit_message_text(
         f"Friends Gender selected: {preference.capitalize()}",
@@ -278,7 +279,7 @@ def handle_gender_query(call):
     if chat_id not in user_data:
         bot.send_message(chat_id, "Session expired. Please click 'Register' again.")
         return
-
+    bot.answer_callback_query(call.id, text="choosing gender ...", show_alert=False)
     gender = call.data.split("_")[1]
     user_data[chat_id]["gender"] = gender
     bot.edit_message_text(
