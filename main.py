@@ -2,13 +2,16 @@ import telebot
 import json
 from telebot import types
 
-TOKEN = "THE TOKEN"
+TOKEN = "YOUR TOKEN"
 bot = telebot.TeleBot(TOKEN)
 
 # Global data structures
 user_data = {}                 # stores registered users
 support_message_mapping = {}   # maps forwarded message IDs to original user chat IDs
 admins = [7740644517]          # list of admin user IDs
+users_connections={}
+
+
 
 # Load existing user data
 try:
@@ -24,7 +27,9 @@ def save_data():
 main_markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
 register_btn = types.KeyboardButton("Register")
 support_btn = types.KeyboardButton("Support")
+friend_btn=types.KeyboardButton("Find Friend")
 main_markup.row(register_btn, support_btn)
+main_markup.row(friend_btn)
 
 # ---------- START ----------
 @bot.message_handler(commands=["start"])
@@ -36,7 +41,7 @@ def first_page(message):
     )
 
 # ---------- MAIN MENU HANDLER ----------
-@bot.message_handler(func=lambda message: message.text in ['Register', 'Support'])
+@bot.message_handler(func=lambda message: message.text in ['Register', 'Support','Find Friend'])
 def answer_request(message):
     if message.text == "Register":
         chat_id = str(message.chat.id)
@@ -57,6 +62,29 @@ def answer_request(message):
             reply_markup=markup
         )
         bot.register_next_step_handler(msg, send_to_support)
+    elif message.text=="Find Friend":
+        chat_id = str(message.chat.id)
+        if not (chat_id in user_data and "age" in user_data[chat_id]):
+            bot.send_message(message.chat.id, "Please Register First :)",reply_markup=main_markup)
+            return
+        gender_markup = types.InlineKeyboardMarkup()
+        man_btn = types.InlineKeyboardButton("Man", callback_data="man_friend")
+        woman_btn = types.InlineKeyboardButton("Woman", callback_data="woman_friend")
+        unknown_btn = types.InlineKeyboardButton("Not Important", callback_data="dontcare_friend")
+        back_btn = types.InlineKeyboardButton("Back", callback_data="support_back_btn")
+        gender_markup.add(man_btn, woman_btn)
+        gender_markup.add(unknown_btn)
+        gender_markup.add(back_btn)
+        bot.send_message(message.chat.id,"what gender do you want to chat?",reply_markup=gender_markup)
+@bot.callback_query_handler(func=lambda call: call.data.endswith("_friend"))
+def handle_gender_query(call):
+    chat_id = str(call.message.chat.id)
+    if chat_id not in user_data:
+        bot.send_message(chat_id, "Session expired. Please click 'Register' again.")
+        return
+    gender = call.data.split("_")[0]
+
+
 
 # ---------- SUPPORT MESSAGE FORWARDING ----------
 def send_to_support(message):
@@ -153,6 +181,7 @@ def age_process(message):
         return
 
     user_data[chat_id]["age"] = age
+    user_data[chat_id]["status"]="disconnected"
     save_data()
     bot.send_message(chat_id, "Registration successful!")
 
