@@ -2,7 +2,7 @@ import telebot
 import json
 from telebot import types
 
-TOKEN = "YOUR TOKEN"
+TOKEN = "Your Token"
 bot = telebot.TeleBot(TOKEN)
 
 user_data = {}
@@ -38,21 +38,51 @@ def save_connections():
 
 load_data()
 
-main_markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+main_markup = types.ReplyKeyboardMarkup(resize_keyboard=False)
 register_btn = types.KeyboardButton("Register")
 support_btn = types.KeyboardButton("Support")
 friend_btn = types.KeyboardButton("Find Friend")
 main_markup.row(register_btn, support_btn)
 main_markup.row(friend_btn)
 
-
+@bot.message_handler(commands=["admin"])
+def admin_page(message):
+    if not message.chat.id in admins :
+        bot.send_message(message.chat.id,"unfortunately You are not my admin 🥲")
+        return
+    admin_markup=types.ReplyKeyboardMarkup(resize_keyboard=False)
+    send_to_all_btn=types.KeyboardButton("Send To All")
+    num_of_users=types.KeyboardButton("Number Of Users")
+    admin_markup.add(send_to_all_btn)
+    admin_markup.add(num_of_users)
+    bot.send_message(message.chat.id,f"Welcome To The Admin Panel Dear Admin {message.from_user.first_name} !\n\nID:{message.chat.id}\n\nChoose From The Buttons Below:",reply_markup=admin_markup)
+@bot.message_handler(
+    func=lambda message: message.text in ["Send To All","Number Of Users"]
+)
+def admin_commands(message):
+    if(message.text=="Send To All"):
+        msg=bot.send_message(message.chat.id,"Enter The message :")
+        bot.register_next_step_handler(msg,send_to_all)
+    if(message.text=="Number Of Users"):
+        num_of_reg=0
+        for userid in user_data:
+            if(user_data.get(userid)!={}):
+                num_of_reg+=1
+        bot.send_message(message.chat.id,f"Number Of Unregistred Users: {len(user_data)}\nNumber Of Registred Users: {num_of_reg}")
+def send_to_all(message):
+    for user_id in user_data:
+        bot.send_message(user_id,f"This Is A Public Message From Admin{message.chat.id}:\n\n{message.text}")
+    bot.send_message(message.chat.id,f"Message Sent To All Users:)")
 @bot.message_handler(commands=["start"])
 def first_page(message):
+    chat_id = str(message.chat.id)
     bot.send_message(
         message.chat.id,
         f"Hi {message.from_user.first_name}, welcome to the Bot!\nPlease choose an option below:",
         reply_markup=main_markup,
     )
+    if(user_data.get(chat_id)==None):
+        user_data[chat_id] = {}
 
 
 @bot.message_handler(
@@ -64,7 +94,6 @@ def answer_request(message):
         if chat_id in user_data and "age" in user_data[chat_id]:
             bot.send_message(message.chat.id, "You have already registered.")
             return
-        user_data[chat_id] = {}
         msg = bot.send_message(chat_id, "Enter your name:")
         bot.register_next_step_handler(msg, name_gender_process)
 
@@ -268,7 +297,10 @@ def handle_admin_reply(message):
     user_chat_id = support_message_mapping.get(original_msg_id)
 
     if user_chat_id:
-        bot.send_message(user_chat_id, f"💬 Support reply:\n\n{message.text}")
+        bot.send_message(
+            user_chat_id,
+            f"💬 Support reply:\n\n{message.text}\n\nIf you need more help click on support button!",
+        )
         bot.send_message(
             message.chat.id, f"✅ Your reply has been sent to user {user_chat_id}."
         )
@@ -312,7 +344,7 @@ def name_gender_process(message):
 def handle_gender_query(call):
     chat_id = str(call.message.chat.id)
     if chat_id not in user_data:
-        bot.send_message(chat_id, "Session expired. Please click 'Register' again.")
+        bot.send_message(chat_id, "Session expired. Please Try Again.")
         return
     bot.answer_callback_query(call.id, text="choosing gender ...", show_alert=False)
     gender = call.data.split("_")[1]
