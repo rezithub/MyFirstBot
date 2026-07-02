@@ -48,7 +48,17 @@ def first_page(message):
         f"Hi {message.from_user.first_name}, welcome to the Bot!\nPlease choose an option below:",
         reply_markup=main_markup
     )
-
+@bot.message_handler(func=lambda message: message.text not in ['Register', 'Support', 'Find Friend','Disconnect'])
+def users_messages_handler(message):
+    chat_id = str(message.chat.id)
+    disconnect_markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    disconnect_btn = types.KeyboardButton("Disconnect")
+    disconnect_markup.row(disconnect_btn)
+    if chat_id in users_connections and users_connections[chat_id].get("status") == "connected":
+        partner_id = users_connections[chat_id]["partner"]
+        bot.send_message(partner_id, f"Your Friend Sent A message :\n\n{message.text}",reply_markup=disconnect_markup)
+    else :
+        bot.send_message(message.chat.id,message.text)
 @bot.message_handler(func=lambda message: message.text in ['Register', 'Support', 'Find Friend'])
 def answer_request(message):
     if message.text == "Register":
@@ -73,7 +83,7 @@ def answer_request(message):
 
     elif message.text == "Find Friend":
         chat_id = str(message.chat.id)
-        if users_connections.get(chat_id).get("status")=="waiting":
+        if users_connections.get(chat_id)!=None and users_connections.get(chat_id).get("status")=="waiting":
             markup = types.InlineKeyboardMarkup()
             cancel_find_btn = types.InlineKeyboardButton("Cancel", callback_data="cancel_find_btn")
             markup.row(cancel_find_btn)
@@ -175,8 +185,8 @@ def friend_gender_callback(call):
     disconnect_btn = types.KeyboardButton("Disconnect")
     disconnect_markup.row(disconnect_btn)
 
-    bot.send_message(chat_id, "Friend found! Say HI to your friend :)", reply_markup=disconnect_markup)
-    bot.send_message(partner_id, "Friend found! Say HI to your friend :)", reply_markup=disconnect_markup)
+    bot.send_message(chat_id, f"Friend Found! Say HI to your friend :)\nFriends Detail:\nname:{user_data[str(chat_id)]["name"]}\nage:{user_data[str(chat_id)]["age"]}\ngender:{user_data[str(chat_id)]["gender"]}", reply_markup=disconnect_markup)
+    bot.send_message(partner_id, f"Friend found! Say HI to your friend :)\nFriends Detail:\nname:{user_data[str(partner_id)]["name"]}\nage:{user_data[str(partner_id)]["age"]}\ngender:{user_data[str(partner_id)]["gender"]}", reply_markup=disconnect_markup)
 
 @bot.message_handler(func=lambda message: message.text == "Disconnect")
 def disconnect(message):
