@@ -46,16 +46,19 @@ main_markup.row(register_btn, support_btn)
 main_markup.row(friend_btn)
 
 
+admin_markup = types.ReplyKeyboardMarkup(resize_keyboard=False)
+send_to_all_btn = types.KeyboardButton("Send To All")
+num_of_users_btn = types.KeyboardButton("Number Of Users")
+user_profile_btn = types.KeyboardButton("User Profile")
+admin_markup.add(send_to_all_btn, user_profile_btn)
+admin_markup.add(num_of_users_btn)
+
+
 @bot.message_handler(commands=["admin"])
 def admin_page(message):
     if not message.chat.id in admins:
         bot.send_message(message.chat.id, "unfortunately You are not my admin 🥲")
         return
-    admin_markup = types.ReplyKeyboardMarkup(resize_keyboard=False)
-    send_to_all_btn = types.KeyboardButton("Send To All")
-    num_of_users = types.KeyboardButton("Number Of Users")
-    admin_markup.add(send_to_all_btn)
-    admin_markup.add(num_of_users)
     bot.send_message(
         message.chat.id,
         f"Welcome To The Admin Panel Dear Admin {message.from_user.first_name} !\n\nID:{message.chat.id}\n\nChoose From The Buttons Below:",
@@ -64,7 +67,8 @@ def admin_page(message):
 
 
 @bot.message_handler(
-    func=lambda message: message.text in ["Send To All", "Number Of Users"]
+    func=lambda message: message.text
+    in ["Send To All", "Number Of Users", "User Profile"]
 )
 def admin_commands(message):
     if message.text == "Send To All":
@@ -77,7 +81,25 @@ def admin_commands(message):
                 num_of_reg += 1
         bot.send_message(
             message.chat.id,
-            f"Number Of Unregistred Users: {len(user_data)}\nNumber Of Registred Users: {num_of_reg}",
+            f"Number Of Total Users: {len(user_data)}\nNumber Of Registred Users: {num_of_reg}\nNumber Of Unregistred Users: {len(user_data)-num_of_reg}",
+        )
+    if message.text == "User Profile":
+        profile_markup = types.InlineKeyboardMarkup()
+        all_IDs_btn = types.InlineKeyboardButton(
+            "ALL USERS", callback_data="all_ids_profile"
+        )
+        special_user_profile = types.InlineKeyboardButton(
+            "SPECIAL USER", callback_data="special_user_profile"
+        )
+        back_user_profile = types.InlineKeyboardButton(
+            "BACK", callback_data="back_profile"
+        )
+        profile_markup.row(all_IDs_btn, special_user_profile)
+        profile_markup.row(back_user_profile)
+        msg = bot.send_message(
+            message.chat.id,
+            "Choose One Of Them :\n\nDescription :\nALL USER : it will show all users ids\nSPECIAL USER:it will send all of the specified users detailes by id",
+            reply_markup=profile_markup,
         )
 
 
@@ -88,6 +110,54 @@ def send_to_all(message):
             f"This Is A Public Message From Admin{message.chat.id}:\n\n{message.text}",
         )
     bot.send_message(message.chat.id, f"Message Sent To All Users:)")
+
+
+@bot.callback_query_handler(func=lambda call: call.data.endswith("_profile"))
+def users_profile_handle(call):
+    profile_type = call.data.split("_")[0]
+    bot.answer_callback_query(call.id, text="Ok", show_alert=False)
+    if profile_type == "all":
+        all_profile = "ALL USER IDS WITH NAMES :"
+        registred_users = "\nRegistred Users:\n"
+        unregistred_users = "\nUnregistred Users:\n"
+        for userid in user_data:
+            if user_data.get(userid) == {}:
+                unregistred_users += str(userid) + "\n"
+                continue
+            registred_users += (
+                str(userid) + " : " + user_data.get(userid).get("name") + "\n"
+            )
+        all_profile += registred_users + unregistred_users
+        bot.send_message(call.message.chat.id, all_profile)
+    elif profile_type == "special":
+        msg = bot.send_message(call.message.chat.id, "Enter The ID:")
+        bot.register_next_step_handler(msg, show_user_profile)
+    elif profile_type == "back":
+        bot.edit_message_text(
+            "OK!", chat_id=call.message.chat.id, message_id=call.message.message_id
+        )
+        bot.send_message(
+            call.message.chat.id,
+            "Welcome Back To The Admin Menu :",
+            reply_markup=admin_markup,
+        )
+
+
+def show_user_profile(message):
+    if not message.text.isdigit():
+        msg = bot.send_message(message.chat.id, "Please Enter A Number Like 800000000:")
+        bot.register_next_step_handler(msg, show_user_profile)
+        return
+    if not str(message.text) in user_data:
+        bot.send_message(message.chat.id, f"User {message.text} Is Not In The Bot",reply_markup=admin_markup)
+        return
+    if user_data.get(str(message.text)) == None:
+        bot.send_message(message.chat.id, f"User {message.text} Is Not Registred Yet",reply_markup=admin_markup)
+        return
+    bot.send_message(
+        message.chat.id,
+        f"Requested User ID:{message.text}\n\nName:{user_data.get(str(message.text)).get("name")}\nAge:{user_data.get(str(message.text)).get("age")}\nGender:{user_data.get(str(message.text)).get("gender")}",
+    )
 
 
 @bot.message_handler(commands=["start"])
