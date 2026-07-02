@@ -1,18 +1,20 @@
 import telebot
 import json
 from telebot import types
-
-TOKEN = "8647110119:AAEMkFY2yhxEKCTtsKz42w8bah1HC1WnOXM"
+with open("token.json", "r", encoding="utf-8") as f:
+    global TOKEN
+    TOKEN=json.load(f).get("token")
 bot = telebot.TeleBot(TOKEN)
 
 user_data = {}
 support_message_mapping = {}
 admins = []
 users_connections = {}
-owner_id=7740644517
+owner_id = 7740644517
+
 
 def load_data():
-    global user_data, users_connections,admins
+    global user_data, users_connections, admins
     try:
         with open("users_database.json", "r", encoding="utf-8") as f:
             user_data = json.load(f)
@@ -25,10 +27,10 @@ def load_data():
     except (FileNotFoundError, json.JSONDecodeError):
         users_connections = {}
     try:
-        with open("admins.json","r",encoding="utf-8") as f:
-            admins=json.load(f).get("admins")
+        with open("admins.json", "r", encoding="utf-8") as f:
+            admins = json.load(f).get("admins")
     except (FileNotFoundError, json.JSONDecodeError):
-        admins=[]
+        admins = []
 
 
 def save_user_data():
@@ -39,10 +41,13 @@ def save_user_data():
 def save_connections():
     with open("connections.json", "w", encoding="utf-8") as f:
         json.dump(users_connections, f, indent=4, ensure_ascii=False)
+
+
 def save_admins():
-    the_dic={"admins":admins}
+    the_dic = {"admins": admins}
     with open("admins.json", "w", encoding="utf-8") as f:
         json.dump(the_dic, f, indent=4, ensure_ascii=False)
+
 
 load_data()
 
@@ -61,10 +66,21 @@ user_profile_btn = types.KeyboardButton("User Profile")
 add_admin_btn = types.KeyboardButton("Add Admin")
 main_menu_btn = types.KeyboardButton("Main Menu")
 admin_markup.add(send_to_all_btn, user_profile_btn)
-admin_markup.add(num_of_users_btn,add_admin_btn)
+admin_markup.add(num_of_users_btn, add_admin_btn)
 admin_markup.add(main_menu_btn)
 
-@bot.message_handler(commands=["admin"])
+
+# @bot.message_handler(commands=["admin"])
+# def admin_page(message):
+#     if not message.chat.id in admins:
+#         bot.send_message(message.chat.id, "unfortunately You are not my admin 🥲")
+#         return
+#     bot.send_message(
+#         message.chat.id,
+#         f"Welcome To The Admin Panel Dear Admin {message.from_user.first_name} !\n\nID:{message.chat.id}\n\nChoose From The Buttons Below:",
+#         reply_markup=admin_markup,
+#     )
+@bot.message_handler(func=lambda message : message.text in ["Admin Panel","/admin"])
 def admin_page(message):
     if not message.chat.id in admins:
         bot.send_message(message.chat.id, "unfortunately You are not my admin 🥲")
@@ -75,10 +91,9 @@ def admin_page(message):
         reply_markup=admin_markup,
     )
 
-
 @bot.message_handler(
     func=lambda message: message.text
-    in ["Send To All", "Number Of Users", "User Profile","Main Menu","Add Admin"]
+    in ["Send To All", "Number Of Users", "User Profile", "Main Menu", "Add Admin"]
 )
 def admin_commands(message):
     if message.text == "Send To All":
@@ -111,22 +126,33 @@ def admin_commands(message):
             "Choose One Of Them :\n\nDescription :\nALL USER : it will show all users ids\nSPECIAL USER:it will send all of the specified users detailes by id",
             reply_markup=profile_markup,
         )
-    elif message.text=="Main Menu":
-        bot.send_message(message.chat.id,"welcome back to the main menu".capitalize(),reply_markup=main_markup)
-    elif message.text=="Add Admin":
-        if message.chat.id!=owner_id:
-            bot.send_message(message.chat.id,"you are not the owner:)".capitalize(),reply_markup=admin_markup)
+    elif message.text == "Main Menu":
+        bot.send_message(
+            message.chat.id,
+            "welcome back to the main menu".capitalize(),
+            reply_markup=main_markup,
+        )
+    elif message.text == "Add Admin":
+        if message.chat.id != owner_id:
+            bot.send_message(
+                message.chat.id,
+                "you are not the owner:)".capitalize(),
+                reply_markup=admin_markup,
+            )
             return
-        back_markup=types.InlineKeyboardMarkup()
+        back_markup = types.InlineKeyboardMarkup()
         back_user_profile = types.InlineKeyboardButton(
             "BACK", callback_data="back_profile"
         )
         back_markup.row(back_user_profile)
-        msg=bot.send_message(message.chat.id,"enter the id : ".capitalize(),reply_markup=back_markup)
-        bot.register_next_step_handler(msg,add_admin)
-        
+        msg = bot.send_message(
+            message.chat.id, "enter the id : ".capitalize(), reply_markup=back_markup
+        )
+        bot.register_next_step_handler(msg, add_admin)
+
     else:
-        bot.send_message(message.chat.id,message.text)
+        bot.send_message(message.chat.id, message.text)
+
 
 def add_admin(message):
     if not message.text.isdigit():
@@ -134,11 +160,21 @@ def add_admin(message):
         bot.register_next_step_handler(msg, show_user_profile)
         return
     if not str(message.text) in user_data:
-        bot.send_message(message.chat.id, f"User {message.text} Is Not In The Bot",reply_markup=admin_markup)
+        bot.send_message(
+            message.chat.id,
+            f"User {message.text} Is Not In The Bot",
+            reply_markup=admin_markup,
+        )
         return
     admins.append(int(message.text))
-    bot.send_message(message.chat.id,f"Admin {message.text} Added Successfully !",reply_markup=admin_markup)
+    bot.send_message(
+        message.chat.id,
+        f"Admin {message.text} Added Successfully !",
+        reply_markup=admin_markup,
+    )
     save_admins()
+
+
 def send_to_all(message):
     for user_id in user_data:
         bot.send_message(
@@ -185,10 +221,18 @@ def show_user_profile(message):
         bot.register_next_step_handler(msg, show_user_profile)
         return
     if not str(message.text) in user_data:
-        bot.send_message(message.chat.id, f"User {message.text} Is Not In The Bot",reply_markup=admin_markup)
+        bot.send_message(
+            message.chat.id,
+            f"User {message.text} Is Not In The Bot",
+            reply_markup=admin_markup,
+        )
         return
     if user_data.get(str(message.text)) == None:
-        bot.send_message(message.chat.id, f"User {message.text} Is Not Registred Yet",reply_markup=admin_markup)
+        bot.send_message(
+            message.chat.id,
+            f"User {message.text} Is Not Registred Yet",
+            reply_markup=admin_markup,
+        )
         return
     bot.send_message(
         message.chat.id,
@@ -199,13 +243,22 @@ def show_user_profile(message):
 @bot.message_handler(commands=["start"])
 def first_page(message):
     chat_id = str(message.chat.id)
+    if user_data.get(chat_id) == None:
+        user_data[chat_id] = {}
+    if int(chat_id) in admins:
+        admin_btn=types.KeyboardButton("Admin Panel")
+        main_markup.add(admin_btn)
+        bot.send_message(
+            message.chat.id,
+            f"Hi Admin {message.from_user.first_name}, welcome to your Bot!\nPlease choose an option below:",
+            reply_markup=main_markup,
+        )
+        return
     bot.send_message(
         message.chat.id,
         f"Hi {message.from_user.first_name}, welcome to the Bot!\nPlease choose an option below:",
         reply_markup=main_markup,
     )
-    if user_data.get(chat_id) == None:
-        user_data[chat_id] = {}
 
 
 @bot.message_handler(
