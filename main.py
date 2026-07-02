@@ -2,7 +2,7 @@ import telebot
 import json
 from telebot import types
 
-TOKEN = "YOUR TOKEN"
+TOKEN = "8647110119:AAEMkFY2yhxEKCTtsKz42w8bah1HC1WnOXM"
 bot = telebot.TeleBot(TOKEN)
 
 user_data = {}
@@ -12,7 +12,7 @@ users_connections = {}
 owner_id=7740644517
 
 def load_data():
-    global user_data, users_connections
+    global user_data, users_connections,admins
     try:
         with open("users_database.json", "r", encoding="utf-8") as f:
             user_data = json.load(f)
@@ -117,8 +117,14 @@ def admin_commands(message):
         if message.chat.id!=owner_id:
             bot.send_message(message.chat.id,"you are not the owner:)".capitalize(),reply_markup=admin_markup)
             return
-        msg=bot.send_message(message.chat.id,"enter the id : ".capitalize(),reply_markup=admin_markup)
+        back_markup=types.InlineKeyboardMarkup()
+        back_user_profile = types.InlineKeyboardButton(
+            "BACK", callback_data="back_profile"
+        )
+        back_markup.row(back_user_profile)
+        msg=bot.send_message(message.chat.id,"enter the id : ".capitalize(),reply_markup=back_markup)
         bot.register_next_step_handler(msg,add_admin)
+        
     else:
         bot.send_message(message.chat.id,message.text)
 
