@@ -2,36 +2,45 @@ import telebot
 import json
 from telebot import types
 
-TOKEN = "YOUR TOKEN"
+TOKEN = "Your Token"
 bot = telebot.TeleBot(TOKEN)
 
-# Global data structures
-user_data = {}                 # stores registered users
-support_message_mapping = {}   # maps forwarded message IDs to original user chat IDs
-admins = [7740644517]          # list of admin user IDs
-users_connections={}
+user_data = {}
+support_message_mapping = {}
+admins = [7740644517]
+users_connections = {}
 
+def load_data():
+    global user_data, users_connections
+    try:
+        with open('users_database.json', 'r', encoding='utf-8') as f:
+            user_data = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        user_data = {}
 
+    try:
+        with open('connections.json', 'r', encoding='utf-8') as f:
+            users_connections = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        users_connections = {}
 
-# Load existing user data
-try:
-    with open('users_database.json', 'r') as file:
-        user_data = json.load(file)
-except (FileNotFoundError, json.JSONDecodeError):
-    user_data = {}
+def save_user_data():
+    with open('users_database.json', 'w', encoding='utf-8') as f:
+        json.dump(user_data, f, indent=4, ensure_ascii=False)
 
-def save_data():
-    with open('users_database.json', 'w') as file:
-        json.dump(user_data, file, indent=4, ensure_ascii=False)
+def save_connections():
+    with open('connections.json', 'w', encoding='utf-8') as f:
+        json.dump(users_connections, f, indent=4, ensure_ascii=False)
+
+load_data()
 
 main_markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
 register_btn = types.KeyboardButton("Register")
 support_btn = types.KeyboardButton("Support")
-friend_btn=types.KeyboardButton("Find Friend")
+friend_btn = types.KeyboardButton("Find Friend")
 main_markup.row(register_btn, support_btn)
 main_markup.row(friend_btn)
 
-# ---------- START ----------
 @bot.message_handler(commands=["start"])
 def first_page(message):
     bot.send_message(
@@ -40,15 +49,14 @@ def first_page(message):
         reply_markup=main_markup
     )
 
-# ---------- MAIN MENU HANDLER ----------
-@bot.message_handler(func=lambda message: message.text in ['Register', 'Support','Find Friend'])
+@bot.message_handler(func=lambda message: message.text in ['Register', 'Support', 'Find Friend'])
 def answer_request(message):
     if message.text == "Register":
         chat_id = str(message.chat.id)
         if chat_id in user_data and "age" in user_data[chat_id]:
             bot.send_message(message.chat.id, "You have already registered.")
             return
-        user_data[chat_id] = {} 
+        user_data[chat_id] = {}
         msg = bot.send_message(chat_id, "Enter your name:")
         bot.register_next_step_handler(msg, name_gender_process)
 
@@ -62,11 +70,16 @@ def answer_request(message):
             reply_markup=markup
         )
         bot.register_next_step_handler(msg, send_to_support)
-    elif message.text=="Find Friend":
+
+    elif message.text == "Find Friend":
         chat_id = str(message.chat.id)
         if not (chat_id in user_data and "age" in user_data[chat_id]):
-            bot.send_message(message.chat.id, "Please Register First :)",reply_markup=main_markup)
+            bot.send_message(message.chat.id, "Please Register First :)", reply_markup=main_markup)
             return
+        if chat_id in users_connections and users_connections[chat_id].get("status") == "connected":
+            bot.send_message(chat_id, "You are already in a chat. Please disconnect first.", reply_markup=main_markup)
+            return
+
         gender_markup = types.InlineKeyboardMarkup()
         man_btn = types.InlineKeyboardButton("Man", callback_data="man_friend")
         woman_btn = types.InlineKeyboardButton("Woman", callback_data="woman_friend")
@@ -75,18 +88,104 @@ def answer_request(message):
         gender_markup.add(man_btn, woman_btn)
         gender_markup.add(unknown_btn)
         gender_markup.add(back_btn)
-        bot.send_message(message.chat.id,"what gender do you want to chat?",reply_markup=gender_markup)
+        bot.send_message(message.chat.id, "What gender do you want to chat with?", reply_markup=gender_markup)
+
 @bot.callback_query_handler(func=lambda call: call.data.endswith("_friend"))
-def handle_gender_query(call):
+def friend_gender_callback(call):
     chat_id = str(call.message.chat.id)
     if chat_id not in user_data:
         bot.send_message(chat_id, "Session expired. Please click 'Register' again.")
         return
-    gender = call.data.split("_")[0]
 
+    preference = call.data.split("_")[0]
+    bot.edit_message_text(
+        f"Friends Gender selected: {preference.capitalize()}",
+        chat_id=chat_id,
+        message_id=call.message.message_id
+    )
+    bot.answer_callback_query(call.id)
 
+    users_connections[chat_id] = {
+        "status": "waiting",
+        "preference": preference
+    }
+    save_connections()
+    bot.send_message(chat_id, "Finding friend, please wait...")
 
-# ---------- SUPPORT MESSAGE FORWARDING ----------
+    partner_id = None
+    for uid, data in list(users_connections.items()):
+        if uid == chat_id:
+            continue
+        if data.get("status") != "waiting":
+            continue
+
+        chooser_gender = user_data[chat_id].get("gender", "unknown")
+        chooser_pref = preference
+        candidate_gender = user_data[uid].get("gender", "unknown")
+        candidate_pref = data.get("preference", "dontcare")
+
+        chooser_accepts = (chooser_pref == "dontcare") or (candidate_gender == chooser_pref)
+        candidate_accepts = (candidate_pref == "dontcare") or (chooser_gender == candidate_pref)
+
+        if chooser_accepts and candidate_accepts:
+            partner_id = uid
+            break
+
+    if partner_id is None:
+        bot.send_message(chat_id, "No one is available right now. Try again later.")
+        users_connections.pop(chat_id, None)
+        save_connections()
+        return
+
+    users_connections[chat_id] = {
+        "status": "connected",
+        "partner": partner_id
+    }
+    users_connections[partner_id] = {
+        "status": "connected",
+        "partner": chat_id
+    }
+    save_connections()
+
+    disconnect_markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    disconnect_btn = types.KeyboardButton("Disconnect")
+    disconnect_markup.row(disconnect_btn)
+
+    bot.send_message(chat_id, "Friend found! Say HI to your friend :)", reply_markup=disconnect_markup)
+    bot.send_message(partner_id, "Friend found! Say HI to your friend :)", reply_markup=disconnect_markup)
+
+@bot.message_handler(func=lambda message: message.text == "Disconnect")
+def disconnect(message):
+    chat_id = str(message.chat.id)
+    if chat_id not in users_connections:
+        bot.send_message(chat_id, "You are not in a chat.", reply_markup=main_markup)
+        return
+
+    conn = users_connections[chat_id]
+    if conn.get("status") != "connected":
+        bot.send_message(chat_id, "You are not currently connected.", reply_markup=main_markup)
+        users_connections.pop(chat_id, None)
+        save_connections()
+        return
+
+    partner_id = conn.get("partner")
+    if partner_id and partner_id in users_connections:
+        bot.send_message(
+            int(partner_id),
+            "The chat has been stopped by the other side. Choose from the buttons:",
+            reply_markup=main_markup
+        )
+        users_connections.pop(partner_id, None)
+
+    users_connections.pop(chat_id, None)
+    save_connections()
+
+    bot.send_message(
+        chat_id,
+        "You stopped the chat. Choose from the buttons:",
+        reply_markup=main_markup
+    )
+
 def send_to_support(message):
     user_chat_id = str(message.chat.id)
     for admin_id in admins:
@@ -100,7 +199,6 @@ def send_to_support(message):
         f"✅ Your message has been sent to support:\n\n{message.text}"
     )
 
-# ---------- ADMIN REPLY HANDLER (when admin replies to a forwarded message) ----------
 @bot.message_handler(func=lambda message: message.chat.id in admins and message.reply_to_message is not None)
 def handle_admin_reply(message):
     original_msg = message.reply_to_message
@@ -110,7 +208,7 @@ def handle_admin_reply(message):
     if user_chat_id:
         bot.send_message(
             user_chat_id,
-            f"💬 Support reply :\n\n{message.text}"
+            f"💬 Support reply:\n\n{message.text}"
         )
         bot.send_message(
             message.chat.id,
@@ -122,7 +220,6 @@ def handle_admin_reply(message):
             "⚠️ This message is not from a support request or the user is no longer in the system."
         )
 
-# ---------- BACK BUTTON CALLBACK ----------
 @bot.callback_query_handler(func=lambda call: call.data == "support_back_btn")
 def handle_support_back(call):
     chat_id = call.message.chat.id
@@ -139,7 +236,6 @@ def handle_support_back(call):
     )
     bot.clear_step_handler_by_chat_id(chat_id)
 
-# ---------- REGISTRATION FLOW ----------
 def name_gender_process(message):
     chat_id = str(message.chat.id)
     user_data[chat_id]["name"] = message.text
@@ -162,12 +258,12 @@ def handle_gender_query(call):
 
     gender = call.data.split("_")[1]
     user_data[chat_id]["gender"] = gender
-
     bot.edit_message_text(
         f"Gender selected: {gender.capitalize()}",
         chat_id=chat_id,
         message_id=call.message.message_id
     )
+    bot.answer_callback_query(call.id)
 
     msg = bot.send_message(chat_id, "Enter your age:")
     bot.register_next_step_handler(msg, age_process)
@@ -181,9 +277,10 @@ def age_process(message):
         return
 
     user_data[chat_id]["age"] = age
-    user_data[chat_id]["status"]="disconnected"
-    save_data()
+    user_data[chat_id]["status"] = "disconnected"
+    save_user_data()
     bot.send_message(chat_id, "Registration successful!")
 
 if __name__ == "__main__":
+    print("Bot is running...")
     bot.infinity_polling()
