@@ -1,9 +1,10 @@
 import telebot
 import json
 from telebot import types
+
 with open("token.json", "r", encoding="utf-8") as f:
     global TOKEN
-    TOKEN=json.load(f).get("token")
+    TOKEN = json.load(f).get("token")
 bot = telebot.TeleBot(TOKEN)
 
 user_data = {}
@@ -70,7 +71,7 @@ admin_markup.add(num_of_users_btn, add_admin_btn)
 admin_markup.add(main_menu_btn)
 
 
-@bot.message_handler(func=lambda message : message.text in ["Admin Panel","/admin"])
+@bot.message_handler(func=lambda message: message.text in ["Admin Panel", "/admin"])
 def admin_page(message):
     if not message.chat.id in admins:
         bot.send_message(message.chat.id, "unfortunately You are not my admin 🥲")
@@ -80,6 +81,7 @@ def admin_page(message):
         f"Welcome To The Admin Panel Dear Admin {message.from_user.first_name} !\n\nID:{message.chat.id}\n\nChoose From The Buttons Below:",
         reply_markup=admin_markup,
     )
+
 
 @bot.message_handler(
     func=lambda message: message.text
@@ -162,7 +164,11 @@ def add_admin(message):
         f"Admin {message.text} Added Successfully !",
         reply_markup=admin_markup,
     )
-    bot.send_message(int(message.text),"the owner promote you to admin !\n\nyou are now my admin:)\nuse admin buttons below:",reply_markup=admin_markup)
+    bot.send_message(
+        int(message.text),
+        "the owner promote you to admin !\n\nyou are now my admin:)\nuse admin buttons below:",
+        reply_markup=admin_markup,
+    )
     save_admins()
 
 
@@ -237,7 +243,7 @@ def first_page(message):
     if user_data.get(chat_id) == None:
         user_data[chat_id] = {}
     if int(chat_id) in admins:
-        admin_btn=types.KeyboardButton("Admin Panel")
+        admin_btn = types.KeyboardButton("Admin Panel")
         main_markup.add(admin_btn)
         bot.send_message(
             message.chat.id,
@@ -258,10 +264,17 @@ def first_page(message):
 def answer_request(message):
     if message.text == "Register":
         chat_id = str(message.chat.id)
-        if chat_id in user_data and "age" in user_data[chat_id]:
+        if chat_id not in user_data:
+            user_data[chat_id] = {}
+        if "age" in user_data[chat_id]:
             bot.send_message(message.chat.id, "You have already registered.")
             return
-        msg = bot.send_message(chat_id, "Enter your name:")
+        markup = types.InlineKeyboardMarkup()
+        back_btn = types.InlineKeyboardButton(
+            "Cancel", callback_data="support_back_btn"
+        )
+        markup.row(back_btn)
+        msg = bot.send_message(chat_id, "Enter your name:", reply_markup=markup)
         bot.register_next_step_handler(msg, name_gender_process)
 
     elif message.text == "Support":
@@ -489,6 +502,11 @@ def handle_support_back(call):
     )
     bot.send_message(chat_id, "Please choose an option:", reply_markup=main_markup)
     bot.clear_step_handler_by_chat_id(chat_id)
+    try:
+        with open("users_database.json", "r", encoding="utf-8") as f:
+            user_data = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        user_data = {}
 
 
 def name_gender_process(message):
@@ -501,9 +519,10 @@ def name_gender_process(message):
     unknown_btn = types.InlineKeyboardButton(
         "Prefer Not To Say", callback_data="gender_unknown"
     )
+    back_btn = types.InlineKeyboardButton("Cancel", callback_data="support_back_btn")
     gender_markup.add(man_btn, woman_btn)
     gender_markup.add(unknown_btn)
-
+    gender_markup.add(back_btn)
     bot.send_message(message.chat.id, "Choose your gender:", reply_markup=gender_markup)
 
 
@@ -522,8 +541,10 @@ def handle_gender_query(call):
         message_id=call.message.message_id,
     )
     bot.answer_callback_query(call.id)
-
-    msg = bot.send_message(chat_id, "Enter your age:")
+    markup = types.InlineKeyboardMarkup()
+    back_btn = types.InlineKeyboardButton("Cancel", callback_data="support_back_btn")
+    markup.row(back_btn)
+    msg = bot.send_message(chat_id, "Enter your age:", reply_markup=markup)
     bot.register_next_step_handler(msg, age_process)
 
 
