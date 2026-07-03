@@ -189,6 +189,9 @@ def send_to_all(message):
 def users_profile_handle(call):
     profile_type = call.data.split("_")[0]
     bot.answer_callback_query(call.id, text="Ok", show_alert=False)
+    bot.edit_message_text(
+        f"SELECTED : {call.data}", chat_id=call.message.chat.id, message_id=call.message.message_id
+    )
     if profile_type == "all":
         all_profile = "ALL USER IDS WITH NAMES :"
         registred_users = "\nRegistred Users:\n"
