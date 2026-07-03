@@ -121,8 +121,6 @@ def admin_commands(message):
             reply_markup=profile_markup,
         )
     elif message.text == "Main Menu":
-        admin_btn = types.KeyboardButton("Admin Panel")
-        main_markup.add(admin_btn)
         bot.send_message(
             message.chat.id,
             "welcome back to the main menu".capitalize(),
