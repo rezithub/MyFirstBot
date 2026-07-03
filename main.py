@@ -1,10 +1,12 @@
+import os
 import telebot
 import json
 from telebot import types
 
-with open("token.json", "r", encoding="utf-8") as f:
-    global TOKEN
-    TOKEN = json.load(f).get("token")
+TOKEN = os.environ.get("BOT_TOKEN")
+if TOKEN is None:
+    raise ValueError("BOT_TOKEN environment variable not set!")
+
 bot = telebot.TeleBot(TOKEN)
 
 user_data = {}
@@ -587,7 +589,5 @@ def users_messages_handler(message):
     else:
         bot.send_message(message.chat.id, message.text)
 
-
-if __name__ == "__main__":
-    print("Bot is running...")
+def start_bot():
     bot.infinity_polling()
