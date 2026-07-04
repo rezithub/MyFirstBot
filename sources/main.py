@@ -130,6 +130,13 @@ def admin_commands(message):
             reply_markup=profile_markup,
         )
     elif message.text == "Main Menu":
+        if message.chat.id in admins:
+            bot.send_message(
+                message.chat.id,
+                f"Hi Admin {message.from_user.first_name}, welcome to your Bot!\nPlease choose an option below:",
+                reply_markup=main_markup_admin,
+            )
+            return
         bot.send_message(
             message.chat.id,
             "welcome back to the main menu".capitalize(),
