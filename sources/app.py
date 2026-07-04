@@ -2,8 +2,6 @@ from flask import Flask
 import threading
 import os
 import json
-# اینجا فایل اصلی ربات خود را ایمپورت کنید
-# فرض کنید فایل اصلی شما main.py است
 import sources.main as main
 
 app = Flask(__name__)
