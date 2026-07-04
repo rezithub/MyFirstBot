@@ -9,6 +9,9 @@ if TOKEN is None:
 
 bot = telebot.TeleBot(TOKEN)
 
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+JSON_DIR = os.path.abspath(os.path.join(CURRENT_DIR, "..", "json"))
+
 user_data = {}
 support_message_mapping = {}
 admins = []
@@ -19,36 +22,37 @@ owner_id = 7740644517
 def load_data():
     global user_data, users_connections, admins
     try:
-        with open("../json/users_database.json", "r", encoding="utf-8") as f:
+        with open(os.path.join(JSON_DIR, "users_database.json"), "r", encoding="utf-8") as f:
             user_data = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         user_data = {}
 
     try:
-        with open("../json/connections.json", "r", encoding="utf-8") as f:
+        with open(os.path.join(JSON_DIR, "connections.json"), "r", encoding="utf-8") as f:
             users_connections = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         users_connections = {}
+        
     try:
-        with open("../json/admins.json", "r", encoding="utf-8") as f:
+        with open(os.path.join(JSON_DIR, "admins.json"), "r", encoding="utf-8") as f:
             admins = json.load(f).get("admins")
     except (FileNotFoundError, json.JSONDecodeError):
         admins = []
 
 
 def save_user_data():
-    with open("../json/users_database.json", "w", encoding="utf-8") as f:
+    with open(os.path.join(JSON_DIR, "users_database.json"), "w", encoding="utf-8") as f:
         json.dump(user_data, f, indent=4, ensure_ascii=False)
 
 
 def save_connections():
-    with open("../json/connections.json", "w", encoding="utf-8") as f:
+    with open(os.path.join(JSON_DIR, "connections.json"), "w", encoding="utf-8") as f:
         json.dump(users_connections, f, indent=4, ensure_ascii=False)
 
 
 def save_admins():
     the_dic = {"admins": admins}
-    with open("../json/admins.json", "w", encoding="utf-8") as f:
+    with open(os.path.join(JSON_DIR, "admins.json"), "w", encoding="utf-8") as f:
         json.dump(the_dic, f, indent=4, ensure_ascii=False)
 
 
@@ -238,7 +242,7 @@ def show_user_profile(message):
         return
     bot.send_message(
         message.chat.id,
-        f"Requested User ID:{message.text}\n\nName:{user_data.get(str(message.text)).get("name")}\nAge:{user_data.get(str(message.text)).get("age")}\nGender:{user_data.get(str(message.text)).get("gender")}",
+        f"Requested User ID:{message.text}\n\nName:{user_data.get(str(message.text)).get('name')}\nAge:{user_data.get(str(message.text)).get('age')}\nGender:{user_data.get(str(message.text)).get('gender')}",
     )
 
 
@@ -416,12 +420,12 @@ def friend_gender_callback(call):
     disconnect_markup.row(disconnect_btn)
     bot.send_message(
         chat_id,
-        f"Friend Found! Say HI to your friend :)\nFriends Detail:\nname:{user_data[str(partner_id)]["name"]}\nage:{user_data[str(partner_id)]["age"]}\ngender:{user_data[str(partner_id)]["gender"]}",
+        f"Friend Found! Say HI to your friend :)\nFriends Detail:\nname:{user_data[str(partner_id)]['name']}\nage:{user_data[str(partner_id)]['age']}\ngender:{user_data[str(partner_id)]['gender']}",
         reply_markup=disconnect_markup,
     )
     bot.send_message(
         partner_id,
-        f"Friend found! Say HI to your friend :)\nFriends Detail:\nname:{user_data[str(chat_id)]["name"]}\nage:{user_data[str(chat_id)]["age"]}\ngender:{user_data[str(chat_id)]["gender"]}",
+        f"Friend found! Say HI to your friend :)\nFriends Detail:\nname:{user_data[str(chat_id)]['name']}\nage:{user_data[str(chat_id)]['age']}\ngender:{user_data[str(chat_id)]['gender']}",
         reply_markup=disconnect_markup,
     )
 
@@ -500,6 +504,7 @@ def handle_admin_reply(message):
 
 @bot.callback_query_handler(func=lambda call: call.data == "support_back_btn")
 def handle_support_back(call):
+    global user_data
     chat_id = call.message.chat.id
     bot.answer_callback_query(call.id, text="Returning to main menu", show_alert=False)
     bot.edit_message_text(
@@ -510,7 +515,7 @@ def handle_support_back(call):
     bot.send_message(chat_id, "Please choose an option:", reply_markup=main_markup)
     bot.clear_step_handler_by_chat_id(chat_id)
     try:
-        with open("../json/users_database.json", "r", encoding="utf-8") as f:
+        with open(os.path.join(JSON_DIR, "users_database.json"), "r", encoding="utf-8") as f:
             user_data = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         user_data = {}
