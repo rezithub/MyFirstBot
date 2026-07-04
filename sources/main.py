@@ -340,6 +340,13 @@ def answer_request(message):
             )
             return
         if not (chat_id in user_data and "age" in user_data[chat_id]):
+            if int(chat_id) in admins:
+                bot.send_message(
+                    int(chat_id),
+                   "Please Register First :)",
+                    reply_markup=main_markup_admin,
+                )
+                return
             bot.send_message(
                 message.chat.id, "Please Register First :)", reply_markup=main_markup
             )
@@ -348,6 +355,13 @@ def answer_request(message):
             chat_id in users_connections
             and users_connections[chat_id].get("status") == "connected"
         ):
+            if int(chat_id) in admins:
+                bot.send_message(
+                    int(chat_id),
+                    "You are already in a chat. Please disconnect first.",
+                    reply_markup=main_markup_admin,
+                )
+                return
             bot.send_message(
                 chat_id,
                 "You are already in a chat. Please disconnect first.",
@@ -383,6 +397,13 @@ def cancel_friend_finding(call):
     bot.edit_message_text(
         "Process Canceled !", chat_id=chat_id, message_id=call.message.message_id
     )
+    if int(chat_id) in admins:
+        bot.send_message(
+            int(chat_id),
+            "Please choose an option:",
+            reply_markup=main_markup_admin,
+        )
+        return
     bot.send_message(chat_id, "Please choose an option:", reply_markup=main_markup)
 
 
@@ -457,11 +478,25 @@ def friend_gender_callback(call):
 def disconnect(message):
     chat_id = str(message.chat.id)
     if chat_id not in users_connections:
+        if int(chat_id) in admins:
+            bot.send_message(
+                int(chat_id),
+                "You are not in a chat.",
+                reply_markup=main_markup_admin,
+            )
+            return
         bot.send_message(chat_id, "You are not in a chat.", reply_markup=main_markup)
         return
 
     conn = users_connections[chat_id]
     if conn.get("status") != "connected":
+        if int(chat_id) in admins:
+            bot.send_message(
+                int(chat_id),
+                "You are not currently connected.",
+                reply_markup=main_markup_admin,
+            )
+            return
         bot.send_message(
             chat_id, "You are not currently connected.", reply_markup=main_markup
         )
@@ -471,6 +506,13 @@ def disconnect(message):
 
     partner_id = conn.get("partner")
     if partner_id and partner_id in users_connections:
+        if int(chat_id) in admins:
+            bot.send_message(
+                int(chat_id),
+                "The chat has been stopped by the other side. Choose from the buttons:",
+                reply_markup=main_markup_admin,
+            )
+            return
         bot.send_message(
             int(partner_id),
             "The chat has been stopped by the other side. Choose from the buttons:",
@@ -480,7 +522,13 @@ def disconnect(message):
 
     users_connections.pop(chat_id, None)
     save_connections()
-
+    if int(chat_id) in admins:
+        bot.send_message(
+            int(chat_id),
+            "You stopped the chat. Choose from the buttons:",
+            reply_markup=main_markup_admin,
+        )
+        return
     bot.send_message(
         chat_id,
         "You stopped the chat. Choose from the buttons:",
@@ -535,6 +583,13 @@ def handle_support_back(call):
         chat_id=chat_id,
         message_id=call.message.message_id,
     )
+    if int(call.message.chat.id) in admins:
+        bot.send_message(
+            call.message.chat.id,
+            f"Hi Admin {call.message.from_user.first_name}, welcome to your Bot!\nPlease choose an option below:",
+            reply_markup=main_markup_admin,
+        )
+        return
     bot.send_message(chat_id, "Please choose an option:", reply_markup=main_markup)
     bot.clear_step_handler_by_chat_id(chat_id)
     try:
