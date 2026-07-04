@@ -19,36 +19,36 @@ owner_id = 7740644517
 def load_data():
     global user_data, users_connections, admins
     try:
-        with open("users_database.json", "r", encoding="utf-8") as f:
+        with open("../json/users_database.json", "r", encoding="utf-8") as f:
             user_data = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         user_data = {}
 
     try:
-        with open("connections.json", "r", encoding="utf-8") as f:
+        with open("../json/connections.json", "r", encoding="utf-8") as f:
             users_connections = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         users_connections = {}
     try:
-        with open("admins.json", "r", encoding="utf-8") as f:
+        with open("../json/admins.json", "r", encoding="utf-8") as f:
             admins = json.load(f).get("admins")
     except (FileNotFoundError, json.JSONDecodeError):
         admins = []
 
 
 def save_user_data():
-    with open("users_database.json", "w", encoding="utf-8") as f:
+    with open("../json/users_database.json", "w", encoding="utf-8") as f:
         json.dump(user_data, f, indent=4, ensure_ascii=False)
 
 
 def save_connections():
-    with open("connections.json", "w", encoding="utf-8") as f:
+    with open("../json/connections.json", "w", encoding="utf-8") as f:
         json.dump(users_connections, f, indent=4, ensure_ascii=False)
 
 
 def save_admins():
     the_dic = {"admins": admins}
-    with open("admins.json", "w", encoding="utf-8") as f:
+    with open("../json/admins.json", "w", encoding="utf-8") as f:
         json.dump(the_dic, f, indent=4, ensure_ascii=False)
 
 
@@ -245,15 +245,17 @@ def show_user_profile(message):
 @bot.message_handler(commands=["start"])
 def first_page(message):
     chat_id = str(message.chat.id)
+    main_markup_admin = types.ReplyKeyboardMarkup(resize_keyboard=False)
+    main_markup_admin=main_markup
     if user_data.get(chat_id) == None:
         user_data[chat_id] = {}
     if int(chat_id) in admins:
         admin_btn = types.KeyboardButton("Admin Panel")
-        main_markup.add(admin_btn)
+        main_markup_admin.add(admin_btn)
         bot.send_message(
             message.chat.id,
             f"Hi Admin {message.from_user.first_name}, welcome to your Bot!\nPlease choose an option below:",
-            reply_markup=main_markup,
+            reply_markup=main_markup_admin,
         )
         return
     bot.send_message(
@@ -508,7 +510,7 @@ def handle_support_back(call):
     bot.send_message(chat_id, "Please choose an option:", reply_markup=main_markup)
     bot.clear_step_handler_by_chat_id(chat_id)
     try:
-        with open("users_database.json", "r", encoding="utf-8") as f:
+        with open("../json/users_database.json", "r", encoding="utf-8") as f:
             user_data = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         user_data = {}

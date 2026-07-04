@@ -4,7 +4,7 @@ import os
 import json
 # اینجا فایل اصلی ربات خود را ایمپورت کنید
 # فرض کنید فایل اصلی شما main.py است
-import main
+import sources.main as main
 
 app = Flask(__name__)
 
