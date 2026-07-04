@@ -582,6 +582,7 @@ def handle_support_back(call):
             f"Hi Admin {call.message.from_user.first_name}, welcome to your Bot!\nPlease choose an option below:",
             reply_markup=main_markup_admin,
         )
+        bot.clear_step_handler_by_chat_id(chat_id)
         return
     bot.send_message(chat_id, "Please choose an option:", reply_markup=main_markup)
     bot.clear_step_handler_by_chat_id(chat_id)
