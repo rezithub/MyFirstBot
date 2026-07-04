@@ -65,6 +65,11 @@ friend_btn = types.KeyboardButton("Find Friend")
 main_markup.row(register_btn, support_btn)
 main_markup.row(friend_btn)
 
+main_markup_admin = types.ReplyKeyboardMarkup(resize_keyboard=False)
+main_markup_admin.row(register_btn, support_btn)
+main_markup_admin.row(friend_btn)
+main_markup_admin.row(types.KeyboardButton("Admin Panel"))
+
 
 admin_markup = types.ReplyKeyboardMarkup(resize_keyboard=False)
 send_to_all_btn = types.KeyboardButton("Send To All")
@@ -249,8 +254,6 @@ def show_user_profile(message):
 @bot.message_handler(commands=["start"])
 def first_page(message):
     chat_id = str(message.chat.id)
-    main_markup_admin = types.ReplyKeyboardMarkup(resize_keyboard=False)
-    main_markup_admin=main_markup
     if user_data.get(chat_id) == None:
         user_data[chat_id] = {}
     if int(chat_id) in admins:
