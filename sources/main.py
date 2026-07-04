@@ -257,8 +257,6 @@ def first_page(message):
     if user_data.get(chat_id) == None:
         user_data[chat_id] = {}
     if int(chat_id) in admins:
-        admin_btn = types.KeyboardButton("Admin Panel")
-        main_markup_admin.add(admin_btn)
         bot.send_message(
             message.chat.id,
             f"Hi Admin {message.from_user.first_name}, welcome to your Bot!\nPlease choose an option below:",
