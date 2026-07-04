@@ -234,13 +234,6 @@ def users_profile_handle(call):
         bot.edit_message_text(
             "OK!", chat_id=call.message.chat.id, message_id=call.message.message_id
         )
-        if int(call.message.chat.id) in admins:
-            bot.send_message(
-                call.message.chat.id,
-                f"Hi Admin {call.message.from_user.first_name}, welcome to your Bot!\nPlease choose an option below:",
-                reply_markup=main_markup_admin,
-            )
-            return
         bot.send_message(
             call.message.chat.id,
             "Welcome Back To The Admin Menu :",
