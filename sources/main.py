@@ -22,17 +22,21 @@ owner_id = 7740644517
 def load_data():
     global user_data, users_connections, admins
     try:
-        with open(os.path.join(JSON_DIR, "users_database.json"), "r", encoding="utf-8") as f:
+        with open(
+            os.path.join(JSON_DIR, "users_database.json"), "r", encoding="utf-8"
+        ) as f:
             user_data = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         user_data = {}
 
     try:
-        with open(os.path.join(JSON_DIR, "connections.json"), "r", encoding="utf-8") as f:
+        with open(
+            os.path.join(JSON_DIR, "connections.json"), "r", encoding="utf-8"
+        ) as f:
             users_connections = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         users_connections = {}
-        
+
     try:
         with open(os.path.join(JSON_DIR, "admins.json"), "r", encoding="utf-8") as f:
             admins = json.load(f).get("admins")
@@ -41,7 +45,9 @@ def load_data():
 
 
 def save_user_data():
-    with open(os.path.join(JSON_DIR, "users_database.json"), "w", encoding="utf-8") as f:
+    with open(
+        os.path.join(JSON_DIR, "users_database.json"), "w", encoding="utf-8"
+    ) as f:
         json.dump(user_data, f, indent=4, ensure_ascii=False)
 
 
@@ -204,7 +210,9 @@ def users_profile_handle(call):
     profile_type = call.data.split("_")[0]
     bot.answer_callback_query(call.id, text="Ok", show_alert=False)
     bot.edit_message_text(
-        f"SELECTED : {call.data}", chat_id=call.message.chat.id, message_id=call.message.message_id
+        f"SELECTED : {call.data}",
+        chat_id=call.message.chat.id,
+        message_id=call.message.message_id,
     )
     if profile_type == "all":
         all_profile = "ALL USER IDS WITH NAMES :"
@@ -226,6 +234,13 @@ def users_profile_handle(call):
         bot.edit_message_text(
             "OK!", chat_id=call.message.chat.id, message_id=call.message.message_id
         )
+        if int(call.message.chat.id) in admins:
+            bot.send_message(
+                call.message.chat.id,
+                f"Hi Admin {call.message.from_user.first_name}, welcome to your Bot!\nPlease choose an option below:",
+                reply_markup=main_markup_admin,
+            )
+            return
         bot.send_message(
             call.message.chat.id,
             "Welcome Back To The Admin Menu :",
@@ -523,7 +538,9 @@ def handle_support_back(call):
     bot.send_message(chat_id, "Please choose an option:", reply_markup=main_markup)
     bot.clear_step_handler_by_chat_id(chat_id)
     try:
-        with open(os.path.join(JSON_DIR, "users_database.json"), "r", encoding="utf-8") as f:
+        with open(
+            os.path.join(JSON_DIR, "users_database.json"), "r", encoding="utf-8"
+        ) as f:
             user_data = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         user_data = {}
@@ -606,6 +623,7 @@ def users_messages_handler(message):
         )
     else:
         bot.send_message(message.chat.id, message.text)
+
 
 def start_bot():
     bot.infinity_polling()
